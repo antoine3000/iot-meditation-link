@@ -3,11 +3,14 @@
 #include <TFT_eSPI.h>
 #include <Seeed_Arduino_GroveAI.h>
 #include <Wire.h>
-#include <WS2812FX.h>
+#include <Adafruit_NeoPixel.h>
+#include "Free_Fonts.h"
 
-#define DEVICE 1
+#define DEVICE 2
 
 // Wifi
+// const char* ssid = "MiFibra-AB58";
+// const char* password = "HwUVPD9K";
 const char* ssid = "Akasha Hub";
 const char* password = "q!=gh8PnvFrYSz5T";
 WiFiClient wioClient;
@@ -19,6 +22,7 @@ const char* mqtt_topic_1 = "mqtthq-ayamola-iot02-01";
 const char* mqtt_topic_2 = "mqtthq-ayamola-iot02-02";
 long lastMsg = 0;
 char msg[50];
+String msg_received;
 String str;
 
 // Display
@@ -30,13 +34,13 @@ GroveAI ai = GroveAI(Wire);
 // LED strip
 #define LED_COUNT 10
 #define LED_PIN 0
-WS2812FX led_strip = WS2812FX(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel led_strip = Adafruit_NeoPixel(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 // Global variables
 int ai_confidence = 60;
 int duration_eyes_closed = 0;
 int duration_eyes_open = 0;
-int meditation_threshold = 0;
+int meditation_threshold = 2;
 bool person = false;
 bool eyes_closed = false;
 
@@ -46,7 +50,16 @@ void setup() {
   // Init display
   tft.begin();
   tft.fillScreen(TFT_BLACK);
-  tft.setRotation(3);
+  tft.setRotation(2);
+  tft.setFreeFont(FF1);
+  // MQTT
+  if (DEVICE == 1) {
+    mqtt_topic_1 = "mqtthq-ayamola-iot02-01";
+    mqtt_topic_2 = "mqtthq-ayamola-iot02-02";
+  } else if (DEVICE == 2) {
+    mqtt_topic_1 = "mqtthq-ayamola-iot02-02";
+    mqtt_topic_2 = "mqtthq-ayamola-iot02-01";
+  }
   // Init wifi
   setup_wifi();
   client.setServer(mqtt_server, 1883);
@@ -57,15 +70,12 @@ void setup() {
     while (true);
   }
   // Init LED strip
-  led_strip.init();
-  led_strip.setColor(WHITE);
-  led_strip.setBrightness(250);
-  led_strip.start();
+  led_strip.setBrightness(255);
+  led_strip.begin();
 }
 
 void loop() {
   long now = millis();
-  led_strip.service();
 
   // Make sure you are connected
   if (!client.connected()) {
@@ -97,12 +107,12 @@ void loop() {
         switch (data.target) {
           case 0:
             eyes_closed = true;
-            duration_eyes_closed ++;
+            duration_eyes_closed++;
             Serial.print("Eyes closed");
             break;
           case 1:
             eyes_closed = false;
-            duration_eyes_open ++;
+            duration_eyes_open++;
             Serial.print("Eyes open");
             if (duration_eyes_open >= meditation_threshold) {
               duration_eyes_closed = 0;
@@ -121,39 +131,67 @@ void loop() {
 
   if (person) {
     if (eyes_closed && duration_eyes_closed >= meditation_threshold) {
-      led_strip.setSegment(0, 0, LED_COUNT-1, FX_MODE_DUAL_SCAN, MAGENTA, 1, false);
+      set_led_strip(0, 255, 0, 100);
       tft.fillScreen(TFT_BLACK);
-      tft.setCursor((320 - tft.textWidth("Meditating...")) / 2, 120);
-      tft.print("Meditating...");
+      tft.setCursor((240 - tft.textWidth("sending out")) / 2, 150);
+      tft.print("sending out");
+      tft.setCursor((240 - tft.textWidth("good waves")) / 2, 170);
+      tft.print("good waves");
+      set_led_strip(0, 50, 0, 100);
     } else {
-      led_strip.setSegment(0, 0, LED_COUNT-1, FX_MODE_SCAN, WHITE, 1, false);
+      set_led_strip(0, 0, 255, 100);
       tft.fillScreen(TFT_BLACK);
-      tft.setCursor((320 - tft.textWidth("Close your eyes")) / 2, 120);
-      tft.print("Close your eyes");
+      tft.setCursor((240 - tft.textWidth("close your eyes")) / 2, 160);
+      tft.print("close your eyes");
+      set_led_strip(0, 0, 50, 100);
     }
   } else {
-    led_strip.setSegment(0, 0, LED_COUNT-1, FX_MODE_BREATH, WHITE, 1, false);
+    set_led_strip(255, 0, 0, 100);
     tft.fillScreen(TFT_BLACK);
-    tft.setCursor((320 - tft.textWidth("Come closer")) / 2, 120);
-    tft.print("Come closer");
+    tft.setCursor((240 - tft.textWidth("come closer")) / 2, 160);
+    tft.print("come closer");
+    set_led_strip(50, 0, 0, 100);
+  }
+
+  if (msg_received == "true") {
+    set_led_strip(255, 255, 255, 100);
+    tft.fillScreen(TFT_BLACK);
+    tft.setCursor((240 - tft.textWidth("sReceiving")) / 2, 140);
+    tft.print("Receiving");
+    tft.setCursor((240 - tft.textWidth("good waves")) / 2, 160);
+    tft.print("good waves");
+    tft.setCursor((240 - tft.textWidth("enjoy <3")) / 2, 180);
+    tft.print("enjoy <3");
+    set_led_strip(50, 50, 50, 100);
   }
 
 
   // Send message every second
   if (now - lastMsg > 1000) {
     lastMsg = now;
-    str = String(duration_eyes_closed);
-    str.toCharArray(msg,50); 
+    if (duration_eyes_closed >= 1) {
+      str = "true";
+    } else {
+      str = "false";
+    }
+    str.toCharArray(msg, 50);
+    if (DEVICE == 1) {
+      client.publish(mqtt_topic_1, msg);
+    } else if (DEVICE == 2) {
+      client.publish(mqtt_topic_2, msg);
+    }
     client.publish(mqtt_topic_1, msg);
+    Serial.print("Sending message: ");
+    Serial.println(msg);
   }
-
 }
 
 void setup_wifi() {
   delay(10);
-  tft.setTextSize(2);
-  tft.setCursor((320 - tft.textWidth("Connecting to Wi-Fi..")) / 2, 120);
-  tft.print("Connecting to Wi-Fi..");
+  tft.setCursor((240 - tft.textWidth("connecting")) / 2, 150);
+  tft.print("connecting");
+  tft.setCursor((240 - tft.textWidth("to wifi")) / 2, 170);
+  tft.print("to wifi");
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -165,8 +203,8 @@ void setup_wifi() {
   Serial.println("");
   Serial.println("WiFi connected");
   tft.fillScreen(TFT_BLACK);
-  tft.setCursor((320 - tft.textWidth("Connected!")) / 2, 120);
-  tft.print("Connected!");
+  tft.setCursor((240 - tft.textWidth("connected!")) / 2, 160);
+  tft.print("connected!");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());  // Display Local IP Address
 }
@@ -182,23 +220,33 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   Serial.println();
   buff_p[length] = '\0';
-  String msg_p = String(buff_p);
-  tft.fillScreen(TFT_BLACK);
-  tft.setCursor((320 - tft.textWidth("MQTT Message")) / 2, 90);
-  tft.print("MQTT Message: ");
-  tft.setCursor((320 - tft.textWidth(msg_p)) / 2, 120);
-  tft.print(msg_p);
+  msg_received = String(buff_p);
 }
 
 void reconnect() {
   while (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
+    Serial.print("MQTT connection...");
+    tft.fillScreen(TFT_BLACK);
+    tft.setCursor((240 - tft.textWidth("connecting")) / 2, 150);
+    tft.print("connecting");
+    tft.setCursor((240 - tft.textWidth("to mqtt")) / 2, 170);
+    tft.print("to mqtt");
     String clientId = "WioTerminal-";
     clientId += String(random(0xffff), HEX);
     if (client.connect(clientId.c_str())) {
       Serial.println("connected");
+      tft.fillScreen(TFT_BLACK);
+      tft.setCursor((240 - tft.textWidth("Connected!")) / 2, 160);
+      tft.print("connected!");
       client.publish(mqtt_topic_1, "hello world");
       client.subscribe(mqtt_topic_2);
+      if (DEVICE == 1) {
+        client.publish(mqtt_topic_1, "hello world");
+        client.subscribe(mqtt_topic_2);
+      } else if (DEVICE == 2) {
+        client.publish(mqtt_topic_2, "hello world");
+        client.subscribe(mqtt_topic_1);
+      }
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -207,3 +255,13 @@ void reconnect() {
     }
   }
 }
+
+void set_led_strip(int red, int green, int blue, int led_delay) {
+  for(int i=0;i<LED_COUNT;i++){
+    led_strip.setPixelColor(i, led_strip.Color(red,green,blue));
+    led_strip.show();
+    delay(led_delay);
+  }
+}
+
+
