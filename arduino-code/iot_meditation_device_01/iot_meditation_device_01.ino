@@ -4,7 +4,6 @@
 #include <Seeed_Arduino_GroveAI.h>
 #include <Wire.h>
 #include <Adafruit_NeoPixel.h>
-#include "Free_Fonts.h"
 
 #define DEVICE 1
 
@@ -27,6 +26,8 @@ String str;
 
 // Display
 TFT_eSPI tft;
+int display_width = 320;
+int display_height = 240;
 
 // Grove AI
 GroveAI ai = GroveAI(Wire);
@@ -50,8 +51,8 @@ void setup() {
   // Init display
   tft.begin();
   tft.fillScreen(TFT_BLACK);
-  tft.setRotation(2);
-  tft.setFreeFont(FF1);
+  tft.setRotation(3);
+  tft.setTextSize(2);
   // MQTT
   if (DEVICE == 1) {
     mqtt_topic_1 = "mqtthq-ayamola-iot02-01";
@@ -133,22 +134,20 @@ void loop() {
     if (eyes_closed && duration_eyes_closed >= meditation_threshold) {
       set_led_strip(0, 255, 0, 100);
       tft.fillScreen(TFT_BLACK);
-      tft.setCursor((240 - tft.textWidth("sending out")) / 2, 150);
-      tft.print("sending out");
-      tft.setCursor((240 - tft.textWidth("good waves")) / 2, 170);
-      tft.print("good waves");
+      tft.setCursor((display_width - tft.textWidth("sending out good waves")) / 2, display_height/2);
+      tft.print("sending out good waves");
       set_led_strip(0, 50, 0, 100);
     } else {
       set_led_strip(0, 0, 255, 100);
       tft.fillScreen(TFT_BLACK);
-      tft.setCursor((240 - tft.textWidth("close your eyes")) / 2, 160);
+      tft.setCursor((display_width - tft.textWidth("close your eyes")) / 2, display_height/2);
       tft.print("close your eyes");
       set_led_strip(0, 0, 50, 100);
     }
   } else {
     set_led_strip(255, 0, 0, 100);
     tft.fillScreen(TFT_BLACK);
-    tft.setCursor((240 - tft.textWidth("come closer")) / 2, 160);
+    tft.setCursor((display_width - tft.textWidth("come closer")) / 2, display_height/2);
     tft.print("come closer");
     set_led_strip(50, 0, 0, 100);
   }
@@ -156,12 +155,8 @@ void loop() {
   if (msg_received == "true") {
     set_led_strip(255, 255, 255, 100);
     tft.fillScreen(TFT_BLACK);
-    tft.setCursor((240 - tft.textWidth("sReceiving")) / 2, 140);
-    tft.print("Receiving");
-    tft.setCursor((240 - tft.textWidth("good waves")) / 2, 160);
-    tft.print("good waves");
-    tft.setCursor((240 - tft.textWidth("enjoy <3")) / 2, 180);
-    tft.print("enjoy <3");
+    tft.setCursor((display_width - tft.textWidth("receiving good waves <3")) / 2, display_height/2);
+    tft.print("receiving good waves <3");
     set_led_strip(50, 50, 50, 100);
   }
 
@@ -188,10 +183,8 @@ void loop() {
 
 void setup_wifi() {
   delay(10);
-  tft.setCursor((240 - tft.textWidth("connecting")) / 2, 150);
-  tft.print("connecting");
-  tft.setCursor((240 - tft.textWidth("to wifi")) / 2, 170);
-  tft.print("to wifi");
+  tft.setCursor((display_width - tft.textWidth("connecting to wifi")) / 2, display_height/2);
+  tft.print("connecting to wifi");
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -203,7 +196,7 @@ void setup_wifi() {
   Serial.println("");
   Serial.println("WiFi connected");
   tft.fillScreen(TFT_BLACK);
-  tft.setCursor((240 - tft.textWidth("connected!")) / 2, 160);
+  tft.setCursor((display_width - tft.textWidth("connected!")) / 2, display_height/2);
   tft.print("connected!");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());  // Display Local IP Address
@@ -227,16 +220,14 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("MQTT connection...");
     tft.fillScreen(TFT_BLACK);
-    tft.setCursor((240 - tft.textWidth("connecting")) / 2, 150);
-    tft.print("connecting");
-    tft.setCursor((240 - tft.textWidth("to mqtt")) / 2, 170);
-    tft.print("to mqtt");
+    tft.setCursor((display_width - tft.textWidth("connecting to mqtt")) / 2, display_height/2);
+    tft.print("connecting to mqtt");
     String clientId = "WioTerminal-";
     clientId += String(random(0xffff), HEX);
     if (client.connect(clientId.c_str())) {
       Serial.println("connected");
       tft.fillScreen(TFT_BLACK);
-      tft.setCursor((240 - tft.textWidth("Connected!")) / 2, 160);
+      tft.setCursor((display_width - tft.textWidth("Connected!")) / 2, 160);
       tft.print("connected!");
       client.publish(mqtt_topic_1, "hello world");
       client.subscribe(mqtt_topic_2);
