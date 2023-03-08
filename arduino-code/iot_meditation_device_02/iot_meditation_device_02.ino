@@ -21,7 +21,7 @@ const char* mqtt_topic_2 = env_mqtt_topic_2;
 long lastMsg = 0;
 char msg[50];
 String msg_received;
-String str;
+String meditating_str;
 
 // Display
 TFT_eSPI tft;
@@ -43,6 +43,7 @@ int duration_eyes_open = 0;
 int meditation_threshold = 2;
 bool person = false;
 bool eyes_closed = false;
+bool meditating = false;
 
 void setup() {
   Serial.begin(115200);
@@ -138,12 +139,14 @@ void loop() {
       tft.setCursor((display_width - tft.textWidth("sending out good waves")) / 2, display_height/2);
       tft.print("sending out good waves");
       set_led_strip(0, 50, 0, 100);
+      meditating = true;
     } else {
       set_led_strip(0, 0, 255, 100);
       tft.fillScreen(TFT_BLACK);
       tft.setCursor((display_width - tft.textWidth("close your eyes")) / 2, display_height/2);
       tft.print("close your eyes");
       set_led_strip(0, 0, 50, 100);
+      meditating = false;
     }
   } else {
     set_led_strip(255, 0, 0, 100);
@@ -151,10 +154,8 @@ void loop() {
     tft.setCursor((display_width - tft.textWidth("come closer")) / 2, display_height/2);
     tft.print("come closer");
     set_led_strip(50, 0, 0, 100);
+    meditating = false;
   }
-
-  Serial.print("message received: ");
-  Serial.println(msg_received);
 
   if (msg_received == "true") {
     set_led_strip(255, 255, 255, 100);
@@ -168,17 +169,13 @@ void loop() {
   // Send message every second
   if (now - lastMsg > 1000) {
     lastMsg = now;
-    if (duration_eyes_closed >= 1) {
-      str = "true";
+    if (meditating) {
+      meditating_str = "true";
     } else {
-      str = "false";
+      meditating_str = "false";
     }
-    str.toCharArray(msg, 50);
-    if (DEVICE == 1) {
-      client.publish(mqtt_topic_1, msg);
-    } else if (DEVICE == 2) {
-      client.publish(mqtt_topic_2, msg);
-    }
+    meditating_str.toCharArray(msg, 50);
+    client.publish(mqtt_topic_1, msg);
     Serial.print("Sending message: ");
     Serial.println(msg);
   }
@@ -234,13 +231,8 @@ void reconnect() {
       tft.fillScreen(TFT_BLACK);
       tft.setCursor((display_width - tft.textWidth("Connected!")) / 2, display_height/2);
       tft.print("connected!");
-      if (DEVICE == 1) {
-        client.publish(mqtt_topic_1, "hello world");
-        client.subscribe(mqtt_topic_2);
-      } else if (DEVICE == 2) {
-        client.publish(mqtt_topic_2, "hello world");
-        client.subscribe(mqtt_topic_1);
-      }
+      client.publish(mqtt_topic_1, "hello world");
+      client.subscribe(mqtt_topic_2);
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
