@@ -1,3 +1,4 @@
+#include "env.h"
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <TFT_eSPI.h>
@@ -8,17 +9,15 @@
 #define DEVICE 1
 
 // Wifi
-// const char* ssid = "MiFibra-AB58";
-// const char* password = "HwUVPD9K";
-const char* ssid = "Akasha Hub";
-const char* password = "q!=gh8PnvFrYSz5T";
+const char* ssid = env_ssid;
+const char* password = env_password;
 WiFiClient wioClient;
 PubSubClient client(wioClient);
 
 // MQTT
-const char* mqtt_server = "public.mqtthq.com";
-const char* mqtt_topic_1 = "mqtthq-ayamola-iot02-01";
-const char* mqtt_topic_2 = "mqtthq-ayamola-iot02-02";
+const char* mqtt_server = env_mqtt_server;
+const char* mqtt_topic_1 = env_mqtt_topic_1;
+const char* mqtt_topic_2 = env_mqtt_topic_2;
 long lastMsg = 0;
 char msg[50];
 String msg_received;
@@ -55,11 +54,11 @@ void setup() {
   tft.setTextSize(2);
   // MQTT
   if (DEVICE == 1) {
-    mqtt_topic_1 = "mqtthq-ayamola-iot02-01";
-    mqtt_topic_2 = "mqtthq-ayamola-iot02-02";
+    mqtt_topic_1 = env_mqtt_topic_1;
+    mqtt_topic_2 = env_mqtt_topic_2;
   } else if (DEVICE == 2) {
-    mqtt_topic_1 = "mqtthq-ayamola-iot02-02";
-    mqtt_topic_2 = "mqtthq-ayamola-iot02-01";
+    mqtt_topic_1 = env_mqtt_topic_2;
+    mqtt_topic_2 = env_mqtt_topic_1;
   }
   // Init wifi
   setup_wifi();
@@ -127,6 +126,8 @@ void loop() {
       }
     } else {
       person = false;
+      duration_eyes_closed = 0;
+      duration_eyes_open = 0;
     }
   }
 
@@ -152,6 +153,9 @@ void loop() {
     set_led_strip(50, 0, 0, 100);
   }
 
+  Serial.print("message received: ");
+  Serial.println(msg_received);
+
   if (msg_received == "true") {
     set_led_strip(255, 255, 255, 100);
     tft.fillScreen(TFT_BLACK);
@@ -175,7 +179,6 @@ void loop() {
     } else if (DEVICE == 2) {
       client.publish(mqtt_topic_2, msg);
     }
-    client.publish(mqtt_topic_1, msg);
     Serial.print("Sending message: ");
     Serial.println(msg);
   }
@@ -214,6 +217,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println();
   buff_p[length] = '\0';
   msg_received = String(buff_p);
+  Serial.print("Receiving message: ");
+  Serial.println(msg_received);
 }
 
 void reconnect() {
@@ -227,10 +232,8 @@ void reconnect() {
     if (client.connect(clientId.c_str())) {
       Serial.println("connected");
       tft.fillScreen(TFT_BLACK);
-      tft.setCursor((display_width - tft.textWidth("Connected!")) / 2, 160);
+      tft.setCursor((display_width - tft.textWidth("Connected!")) / 2, display_height/2);
       tft.print("connected!");
-      client.publish(mqtt_topic_1, "hello world");
-      client.subscribe(mqtt_topic_2);
       if (DEVICE == 1) {
         client.publish(mqtt_topic_1, "hello world");
         client.subscribe(mqtt_topic_2);
