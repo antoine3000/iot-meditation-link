@@ -2,9 +2,7 @@
 
 Meditation Link invites participants to close their eyes and meditate. This object, equipped with a camera, analyses the participants to detect their level of meditation and communicates from one object to another, inviting others to join a collective meditation.
 
-````
-This project is open-source and designed to be built and deconstructed, learned and re-appropriated.
-````
+>  This project is open-source and designed to be built and deconstructed, learned and re-appropriated.
 
 ![](medias/IMG_0209.jpg)
 *Meditation Link, a tool for teaching and questioning technology*
