@@ -12,8 +12,8 @@ Meditation Link invites participants to close their eyes and meditate. This obje
 
 ### Components
 
-- Seeed Studio Wio Terminal
-- Grove AI Vision
+- [Seeed Studio Wio Terminal](https://wiki.seeedstudio.com/Wio-Terminal-Getting-Started/)
+- [Grove AI Vision](https://wiki.seeedstudio.com/Grove-Vision-AI-Module/)
 - Grove RGB LED Stick
 - [3D-printed support](iot-meditation-link-support.stl)
 
@@ -62,6 +62,8 @@ A relatively complicated code and the installation of a multitude of tools are r
 - Once connected to the USB port of your computer, the camera can be put into bootloader mode by double-clicking the BOOT button.
 - A drive will be mounted on your computer with the name GROVEAI. You can drag and drop the previously generated UF2 file into this drive to flash the camera.
 - The GROVEAI drive will disappear indicating the firmware has been uploaded.
+
+Find the source: [Generated model](/model-1.uf2)
 
 ### Arduino
 

@@ -37,7 +37,7 @@ GroveAI ai = GroveAI(Wire);
 Adafruit_NeoPixel led_strip = Adafruit_NeoPixel(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 // Global variables
-int ai_confidence = 60;
+int ai_confidence = 20;
 int duration_eyes_closed = 0;
 int duration_eyes_open = 0;
 int meditation_threshold = 2;
